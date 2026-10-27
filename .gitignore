@@ -1,0 +1,17 @@
+# Partidas y respaldos personales (nunca subirlos)
+tests/fixtures/
+*.sav
+*.bak
+*.zip
+nfsu2-saves-*/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

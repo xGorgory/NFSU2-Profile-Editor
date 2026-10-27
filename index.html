@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFSU2 Profile Editor</title>
+  <meta name="claude:viewport-fit-sides" content="cover" />
+  <style>
+    :root {
+      --bg: #0b0e1a;
+      --panel: #151a2c;
+      --panel-2: #0e1224;
+      --line: #252b45;
+      --muted: #98a2b3;
+      --text: #e5e7eb;
+      --accent: #a3e635;
+      --accent-2: #60a5fa;
+      --warn: #fbbf24;
+      --bad: #f87171;
+      --ok: #34d399;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box }
+    html { background: var(--bg) }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+      background: radial-gradient(1200px 500px at 50% -200px, #1b2445 0%, transparent 70%) no-repeat, var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 980px; margin: 0 auto;
+      padding-block: 24px 48px;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px))
+    }
+    button.danger { border-color: var(--bad); color: var(--bad) }
+
+    header { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap }
+    h1 { font-size: clamp(22px, 3.2vw, 30px); margin: 0 0 6px; font-style: italic; letter-spacing: .3px }
+    h2 { font-size: 17px; margin: 0 0 12px; color: var(--accent); font-style: italic }
+    .sub { color: var(--muted); margin: 0; max-width: 640px; line-height: 1.45 }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin: 14px 0;
+      box-shadow: 0 6px 28px rgba(0, 0, 0, .28)
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center }
+
+    label { display: block; font-weight: 600; margin-bottom: 6px }
+    .hint { color: var(--muted); font-size: 13px; margin-top: 6px }
+    .muted { color: var(--muted) }
+    .error { color: var(--bad); font-size: 13px; margin-top: 6px; min-height: 1em }
+
+    input[type="number"], input[type="text"], select, button {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit
+    }
+
+    input[type="number"], input[type="text"], select { width: 100% }
+    input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px }
+
+    button { cursor: pointer; transition: background .15s, border-color .15s }
+    button:hover:not(:disabled) { border-color: #3b4470 }
+    button.primary { background: var(--accent); color: #111; border: 0; font-weight: 700 }
+    button.primary:hover:not(:disabled) { filter: brightness(1.07) }
+    button.small { padding: 6px 10px; font-size: 13px }
+    button:disabled { opacity: .45; cursor: not-allowed }
+
+    .lang select { width: auto }
+
+    .drop {
+      border: 2px dashed #34406b;
+      border-radius: 16px;
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s
+    }
+
+    .drop.over, .drop:hover { border-color: var(--accent); background: rgba(163, 230, 53, .05) }
+    .drop strong { display: block; font-size: 18px; margin-bottom: 4px }
+    #file { display: none }
+
+    .stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px }
+    .stat .v { font-size: 20px; font-weight: 700; margin-top: 4px; word-break: break-word }
+    .ok { color: var(--ok) }
+    .warn { color: var(--warn) }
+
+    .slot { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px }
+    .slot.empty { opacity: .55 }
+    .slot h3 { margin: 0 0 6px; font-size: 15px }
+    .slot .meta { font-size: 13px; color: var(--muted); margin-bottom: 10px }
+    .slot .row button { flex: 1 1 auto }
+    .tag { font-size: 11px; padding: 2px 7px; border-radius: 99px; border: 1px solid #5a4a12; color: var(--warn); margin-left: 6px; vertical-align: 1px }
+    .note { border-left: 3px solid var(--warn); padding: 8px 12px; color: var(--muted); font-size: 13px; background: rgba(251, 191, 36, .05); border-radius: 0 8px 8px 0 }
+
+    ul.changes { margin: 0; padding-left: 18px; line-height: 1.7 }
+    ul.changes li b { color: var(--accent) }
+
+    ol.how { margin: 0 0 12px; padding-left: 20px; line-height: 1.7 }
+
+    .hex { font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; overflow-x: auto; white-space: pre; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px }
+    .hex .off { color: var(--muted) }
+    .hex .chg { background: var(--accent); color: #111; border-radius: 3px }
+    .hex .asc { color: var(--muted) }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+      background: #1f2a14; border: 1px solid var(--accent); color: var(--text);
+      padding: 10px 16px; border-radius: 12px; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: calc(100% - 32px)
+    }
+
+    .toast.show { opacity: 1 }
+    .toast.bad { background: #2a1414; border-color: var(--bad) }
+
+    .small-drop { padding: 16px 12px; margin-bottom: 6px }
+    .cmp-side button { margin-top: 6px }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px }
+    table { border-collapse: collapse; width: 100%; font-size: 13px }
+    th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top }
+    th { background: var(--panel-2); color: var(--muted); font-weight: 600; position: sticky; top: 0 }
+    td.mono { font-family: ui-monospace, Consolas, "Courier New", monospace; white-space: nowrap }
+    td .after { color: var(--accent) }
+    tr.unknown td:nth-child(2) { color: var(--warn) }
+    td.note-cell input { min-width: 150px; padding: 5px 8px; font-size: 13px }
+    td .noted { color: var(--accent); font-weight: 600 }
+
+    .hist-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
+    .hist-row .t { font-weight: 600; word-break: break-word }
+    .hist-row .m { font-size: 12px; color: var(--muted) }
+    .hist-row .row { gap: 6px }
+    .badge { font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px }
+    .badge.ed { border-color: #3f5a16; color: var(--accent) }
+    @media (max-width: 560px) { .hist-row { grid-template-columns: 1fr } }
+
+    .set-section { margin: 16px 0 6px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .8px }
+    .set-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 240px) auto; gap: 10px; align-items: center; padding: 10px 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
+    .set-row.changed { border-color: var(--accent) }
+    .set-row .k { font-size: 12px; color: var(--muted); font-family: ui-monospace, Consolas, monospace }
+    .set-row .st { font-size: 11px; color: var(--muted) }
+    .set-row.custom .st { color: var(--accent) }
+    .set-row details { grid-column: 1 / -1; border: 0; padding: 0; font-size: 12px; color: var(--muted) }
+    .set-row details summary { color: var(--muted); font-style: normal; font-weight: 400 }
+    @media (max-width: 560px) { .set-row { grid-template-columns: 1fr } }
+
+    details summary { cursor: pointer; font-weight: 600; color: var(--accent); font-style: italic }
+    footer { margin-top: 22px; font-size: 12px; color: var(--muted); text-align: center }
+
+    @media (max-width: 560px) { .card { padding: 14px } }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1 data-i18n="title">NFS Underground 2 – Editor de partidas</h1>
+        <p class="sub" data-i18n="subtitle"></p>
+      </div>
+      <div class="lang"><select id="lang" aria-label="Language"></select></div>
+    </header>
+
+    <!-- Abrir archivo -->
+    <div class="card">
+      <div id="drop" class="drop" tabindex="0" role="button">
+        <strong data-i18n="dropTitle"></strong>
+        <span class="muted" data-i18n="dropHint"></span>
+        <input id="file" type="file" />
+      </div>
+      <div id="fileInfo" class="hint"></div>
+      <div id="zipPick" hidden style="margin-top:12px">
+        <label for="zipSelect" data-i18n="chooseSave"></label>
+        <select id="zipSelect"></select>
+      </div>
+      <div id="loadError" class="error"></div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="card" id="summary" hidden>
+      <h2 data-i18n="summary"></h2>
+      <div class="grid">
+        <div class="stat"><div class="muted" data-i18n="profile"></div><div class="v" id="sName">—</div></div>
+        <div class="stat"><div class="muted" data-i18n="money"></div><div class="v" id="sMoney">—</div></div>
+        <div class="stat"><div class="muted" data-i18n="cars"></div><div class="v" id="sCars">—</div></div>
+        <div class="stat"><div class="muted" data-i18n="header"></div><div class="v" id="sHeader">—</div></div>
+      </div>
+      <p id="headerWarn" class="note" hidden data-i18n="headerBadLong"></p>
+    </div>
+
+    <!-- Edición -->
+    <div class="card" id="editor" hidden>
+      <h2 data-i18n="edit"></h2>
+      <div class="grid">
+        <div>
+          <label for="name" data-i18n="name"></label>
+          <input id="name" type="text" autocomplete="off" />
+          <div class="hint" id="nameHint"></div>
+          <div class="error" id="nameErr"></div>
+        </div>
+        <div>
+          <label for="money" data-i18n="money"></label>
+          <div class="row" style="flex-wrap:nowrap">
+            <input id="money" type="number" min="0" step="1" />
+            <button id="moneySet" data-i18n="set"></button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="small" data-add="10000">+10.000</button>
+            <button class="small" data-add="100000">+100.000</button>
+            <button class="small" data-add="1000000">+1.000.000</button>
+          </div>
+          <div class="hint" id="moneyHint"></div>
+          <div class="error" id="moneyErr"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Garaje -->
+    <div class="card" id="garageCard" hidden>
+      <h2 data-i18n="garage"></h2>
+      <p class="note" data-i18n="perfWarn"></p>
+      <div class="grid" id="garage" style="margin-top:12px"></div>
+    </div>
+
+    <!-- settings.ini -->
+    <div class="card" id="settingsCard" hidden>
+      <details>
+        <summary data-i18n="setTitle"></summary>
+        <p class="muted" data-i18n="setIntro"></p>
+        <div class="row" style="margin-bottom:12px">
+          <div style="flex:1 1 220px"><input id="setSearch" type="text" autocomplete="off" /></div>
+          <label class="muted" style="font-weight:400;margin:0"><input id="setOnlyChanged" type="checkbox" /> <span data-i18n="setOnlyChanged"></span></label>
+        </div>
+        <div id="settingsList"></div>
+      </details>
+    </div>
+
+    <!-- registry.txt -->
+    <div class="card" id="registryCard" hidden>
+      <details>
+        <summary data-i18n="regTitle"></summary>
+        <p class="muted" data-i18n="regIntro"></p>
+        <div id="registryList"></div>
+      </details>
+    </div>
+
+    <!-- Cambios y descarga -->
+    <div class="card" id="output" hidden>
+      <h2 data-i18n="changes"></h2>
+      <div id="changes"></div>
+      <div style="height:14px"></div>
+      <div class="row">
+        <button id="download" class="primary"></button>
+        <button id="downloadOriginal" data-i18n="downloadOriginal"></button>
+        <button id="undo" data-i18n="undo"></button>
+        <button id="resetAll" data-i18n="resetAll"></button>
+      </div>
+      <label class="muted" style="font-weight:400;margin-top:12px">
+        <input id="autoBackup" type="checkbox" checked /> <span data-i18n="autoBackup"></span>
+      </label>
+    </div>
+
+    <!-- Ayuda -->
+    <div class="card">
+      <details>
+        <summary data-i18n="howTitle"></summary>
+        <ol class="how" style="margin-top:12px">
+          <li data-i18n="how1"></li>
+          <li data-i18n="how2"></li>
+          <li data-i18n="how3"></li>
+          <li data-i18n="how4"></li>
+        </ol>
+        <p class="note" data-i18n="checksumNote"></p>
+      </details>
+    </div>
+
+    <!-- Historial -->
+    <div class="card" id="historyCard">
+      <details id="historyDetails">
+        <summary data-i18n="histTitle"></summary>
+        <p class="muted" data-i18n="histIntro"></p>
+        <div id="historyList"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="small" id="histClear" data-i18n="histClear"></button>
+          <span class="muted" id="histConfirmMsg" style="font-size:13px"></span>
+        </div>
+      </details>
+    </div>
+
+    <!-- Comparador -->
+    <div class="card" id="compareCard">
+      <details id="compareDetails">
+        <summary data-i18n="compareTitle"></summary>
+        <p class="muted" data-i18n="compareIntro"></p>
+        <div class="grid">
+          <div class="cmp-side">
+            <label data-i18n="compareA"></label>
+            <div class="drop small-drop" data-side="A" tabindex="0" role="button"><span data-i18n="comparePick"></span></div>
+            <div class="hint" id="cmpInfoA"></div>
+            <button class="small" data-use="A" data-i18n="useCurrent" disabled></button>
+          </div>
+          <div class="cmp-side">
+            <label data-i18n="compareB"></label>
+            <div class="drop small-drop" data-side="B" tabindex="0" role="button"><span data-i18n="comparePick"></span></div>
+            <div class="hint" id="cmpInfoB"></div>
+            <button class="small" data-use="B" data-i18n="useCurrent" disabled></button>
+          </div>
+        </div>
+        <input id="cmpFile" type="file" hidden />
+        <div class="error" id="cmpErr"></div>
+        <div id="cmpResult" hidden>
+          <p id="cmpSummary" style="font-weight:600;margin:6px 0"></p>
+          <p id="cmpSizeWarn" class="note" hidden></p>
+          <div class="row" style="margin:8px 0 12px">
+            <label class="muted" style="font-weight:400;margin:0"><input id="cmpHideKnown" type="checkbox" /> <span data-i18n="cmpHideKnown"></span></label>
+            <label class="muted" style="font-weight:400;margin:0"><input id="cmpHideChecksum" type="checkbox" checked /> <span data-i18n="cmpHideChecksum"></span></label>
+            <button class="small" id="cmpExport" data-i18n="cmpExport"></button>
+            <button class="small" id="notesExport" data-i18n="notesExport"></button>
+            <button class="small" id="notesImport" data-i18n="notesImport"></button>
+            <input id="notesFile" type="file" accept=".json,application/json" hidden />
+          </div>
+          <p class="hint" data-i18n="notesHint"></p>
+          <div class="table-wrap"><table id="cmpTable"></table></div>
+          <p class="hint" id="cmpShowing"></p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Visor hexadecimal -->
+    <div class="card" id="hexCard" hidden>
+      <details>
+        <summary data-i18n="hexTitle"></summary>
+        <div class="row" style="margin:12px 0">
+          <div style="flex:0 1 180px">
+            <label for="hexOff" data-i18n="hexOffset"></label>
+            <input id="hexOff" type="text" value="A160" />
+          </div>
+          <button id="hexGo" style="align-self:flex-end" data-i18n="hexGo"></button>
+          <span class="muted" style="align-self:flex-end;padding-bottom:10px" data-i18n="hexJump"></span>
+          <button class="small" style="align-self:flex-end" data-jump="0" data-i18n="hexHeader"></button>
+          <button class="small" style="align-self:flex-end" data-jump="A16A" data-i18n="hexMoney"></button>
+          <button class="small" style="align-self:flex-end" data-jump="D225" data-i18n="hexName"></button>
+          <button class="small" style="align-self:flex-end" data-jump="5AEC" data-i18n="hexSlot"></button>
+        </div>
+        <div id="hex" class="hex"></div>
+      </details>
+    </div>
+
+    <footer data-i18n="footer"></footer>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="src/core.js"></script>
+  <script src="src/settings.js"></script>
+  <script src="src/history.js"></script>
+  <script src="src/i18n.js"></script>
+  <script src="src/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "nfsu2-profile-editor",
+  "version": "2.0.0",
+  "description": "Editor de partidas de Need for Speed Underground 2 que funciona 100 % en el navegador. Compatible con nfsu2.xyz (Underground 2 Revived).",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node tests/core.test.js",
+    "start": "npx --yes serve@14.2.4 ."
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["nfsu2", "need-for-speed", "underground-2", "save-editor", "nfsu2-xyz"]
+}
