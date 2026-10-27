@@ -1,11 +1,18 @@
 # NFSU2 Profile Editor
 
+[![Pruebas](https://github.com/xGorgory/NFSU2-Profile-Editor/actions/workflows/tests.yml/badge.svg)](https://github.com/xGorgory/NFSU2-Profile-Editor/actions/workflows/tests.yml)
+[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-a3e635.svg)](LICENSE)
+![Sin dependencias](https://img.shields.io/badge/dependencias-0-60a5fa.svg)
+![Idiomas](https://img.shields.io/badge/idiomas-ES%20·%20EN%20·%20PT-98a2b3.svg)
+
 Editor de partidas de **Need for Speed Underground 2** que funciona 100 % en el navegador: no hay servidor y tus partidas no se suben a ningún lado.
 Compatible con las partidas del juego de PC y con el respaldo `.zip` de **[nfsu2.xyz](https://nfsu2.xyz) (Underground 2 Revived)**.
 
 Disponible en español, inglés y portugués.
 
 > *English summary below.*
+
+![Editor con una partida de ejemplo: resumen, edición de dinero y garaje con las mejoras al máximo](docs/captura.png)
 
 ## Cómo usarlo
 
@@ -63,7 +70,7 @@ Disponible en español, inglés y portugués.
 - Tabla de IDs de autos → nombres.
 - Estadísticas de carrera, reputación y apariencia del auto.
 
-¿Descubriste algo con el comparador? Abre un *issue* o un *pull request* con el offset y qué contiene.
+¿Descubriste algo con el comparador? Mira [cómo contribuir](CONTRIBUTING.md) y abre un *issue* con la plantilla **Descubrimiento del formato**.
 
 ## Desarrollo
 

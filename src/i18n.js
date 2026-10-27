@@ -44,7 +44,7 @@
       duplicate: 'Duplicar en espacio vacío',
       restore: 'Deshacer cambios de este auto',
       experimental: 'Experimental',
-      perfWarn: '"Mejoras al máximo" escribe exactamente lo que el juego conserva al guardar (probado con tu partida). "Duplicar" sigue siendo experimental: haz una copia antes.',
+      perfWarn: '"Mejoras al máximo" escribe exactamente lo que el juego conserva al guardar (probado con una partida real). "Duplicar" sigue siendo experimental: haz una copia antes.',
       noEmptySlot: 'No hay espacios vacíos.',
 
       changes: 'Cambios pendientes',

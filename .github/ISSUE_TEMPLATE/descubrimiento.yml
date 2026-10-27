@@ -1,0 +1,35 @@
+name: Descubrimiento del formato
+description: Encontraste qué guarda una zona de la partida (con el comparador)
+title: "[Formato] "
+labels: ["formato"]
+body:
+  - type: textarea
+    id: accion
+    attributes:
+      label: ¿Qué hiciste en el juego entre las dos copias?
+      placeholder: "Ej.: compré un Nissan 350Z por $25.000 y no hice nada más."
+    validations:
+      required: true
+  - type: textarea
+    id: zonas
+    attributes:
+      label: Zonas que cambiaron
+      description: Posición, bytes antes y después, y el valor como número. Puedes pegar el CSV del comparador.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: conclusion
+    attributes:
+      label: ¿Qué crees que guarda?
+      placeholder: "Ej.: 0xC29A = carreras ganadas"
+  - type: dropdown
+    id: version
+    attributes:
+      label: Versión del juego
+      options:
+        - nfsu2.xyz (Underground 2 Revived)
+        - PC original
+        - Otra
+    validations:
+      required: true

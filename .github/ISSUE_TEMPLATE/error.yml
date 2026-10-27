@@ -1,0 +1,33 @@
+name: Error
+description: Algo no funciona como debería
+title: "[Error] "
+labels: ["error"]
+body:
+  - type: textarea
+    id: pasos
+    attributes:
+      label: ¿Qué hiciste?
+      placeholder: "1. Abrí el zip de nfsu2.xyz  2. Cambié el dinero  3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: ¿Qué esperabas y qué pasó?
+    validations:
+      required: true
+  - type: input
+    id: navegador
+    attributes:
+      label: Navegador y sistema
+      placeholder: "Ej.: Chrome 131 en Windows 11"
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Versión del juego
+      options:
+        - nfsu2.xyz (Underground 2 Revived)
+        - PC original
+        - Otra
