@@ -103,7 +103,12 @@
     .warn { color: var(--warn) }
 
     .slot { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px }
-    .slot.empty { opacity: .55 }
+    .slot.empty h3, .slot.empty .meta { color: var(--muted) }
+    .slot.locked { border-style: dashed; background: transparent }
+    .covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px }
+    .cover { margin: 0; display: grid; gap: 8px; min-width: 0 }
+    .cover canvas { width: 100%; height: auto; aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); max-width: 100% }
+    .cover figcaption { font-size: 13px; color: var(--muted); word-break: break-word }
     .slot h3 { margin: 0 0 6px; font-size: 15px }
     .slot .meta { font-size: 13px; color: var(--muted); margin-bottom: 10px }
     .slot .row button { flex: 1 1 auto }
@@ -248,6 +253,15 @@
           <label class="muted" style="font-weight:400;margin:0"><input id="setOnlyChanged" type="checkbox" /> <span data-i18n="setOnlyChanged"></span></label>
         </div>
         <div id="settingsList"></div>
+      </details>
+    </div>
+
+    <!-- Portadas -->
+    <div class="card" id="coversCard" hidden>
+      <details>
+        <summary data-i18n="coversTitle"></summary>
+        <p class="muted" data-i18n="coversIntro"></p>
+        <div id="covers" class="covers"></div>
       </details>
     </div>
 

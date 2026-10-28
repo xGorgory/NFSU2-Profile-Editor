@@ -41,7 +41,7 @@
     }
     return downloadsCap;
   }
-  const ALLOWED_EXT = /\.(zip|json|csv|txt|md)$/i;
+  const ALLOWED_EXT = /\.(zip|json|csv|txt|md|png)$/i;
 
   /** Devuelve true si el archivo se entregó (o se intentó entregar con un enlace). */
   async function download(bytes, filename) {
@@ -108,12 +108,14 @@
         $('#zipPick').hidden = saveIndexes.length < 2;
         loadSettings(entries);
         loadRegistry(entries);
+        loadCovers(entries);
         loadSave(saveIndexes[0]);
       } else {
         if (!C.isSave(bytes)) throw Object.assign(new Error(), { ui: 'notASave' });
         state.source = { kind: 'file', name: file.name, rawBytes: bytes };
         loadSettings([]);
         loadRegistry([]);
+        loadCovers([]);
         $('#fileInfo').textContent = t('loadedFile', { name: file.name, size: fmt(bytes.length) });
         loadSave(null);
       }
@@ -152,7 +154,7 @@
   }
 
   function hideEditor() {
-    ['#summary', '#editor', '#garageCard', '#output', '#hexCard', '#settingsCard', '#registryCard'].forEach((s) => { $(s).hidden = true; });
+    ['#summary', '#editor', '#garageCard', '#output', '#hexCard', '#settingsCard', '#registryCard', '#coversCard'].forEach((s) => { $(s).hidden = true; });
     state.work = null; state.original = null; state.settings = null; state.registry = null;
     updateUseButtons();
   }
@@ -252,6 +254,37 @@
 
   $('#setSearch').addEventListener('input', renderSettings);
   $('#setOnlyChanged').addEventListener('change', renderSettings);
+
+  // ---------------------------------------------------------------------------
+  // Portadas de DVD / revista (archivos "<perfil> DVD n" del respaldo)
+  // ---------------------------------------------------------------------------
+  function loadCovers(entries) {
+    const covers = entries.filter((e) => !e.dir && C.isCover(e.data));
+    const box = $('#covers');
+    box.innerHTML = '';
+    $('#coversCard').hidden = !covers.length;
+    for (const e of covers) {
+      const { width, height, data } = C.coverToRGBA(e.data);
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').putImageData(new ImageData(data, width, height), 0, 0);
+      const title = e.name.split('/').pop();
+      canvas.setAttribute('role', 'img');
+      canvas.setAttribute('aria-label', title);
+      const fig = document.createElement('figure');
+      fig.className = 'cover';
+      const cap = document.createElement('figcaption');
+      cap.textContent = title;
+      const b = document.createElement('button');
+      b.className = 'small';
+      b.textContent = t('coverDownload');
+      b.addEventListener('click', () => canvas.toBlob(async (blob) => {
+        if (blob) await download(new Uint8Array(await blob.arrayBuffer()), title.replace(/[^\w\- ]+/g, '') + '.png');
+      }, 'image/png'));
+      fig.append(canvas, cap, b);
+      box.appendChild(fig);
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // registry.txt (gráficos)
@@ -640,17 +673,26 @@
   function renderGarage(s) {
     const box = $('#garage');
     box.innerHTML = '';
-    const emptySlots = s.slots.filter((x) => !x.used).map((x) => x.index);
+    const emptySlots = s.slots.filter((x) => !x.used && !x.locked).map((x) => x.index);
     for (const slot of s.slots) {
       const div = document.createElement('div');
-      div.className = 'slot' + (slot.used ? '' : ' empty');
+      div.className = 'slot' + (slot.used ? '' : ' empty') + (slot.locked ? ' locked' : '');
       const title = document.createElement('h3');
       title.textContent = t('slot', { n: slot.index + 1 });
       div.appendChild(title);
       const meta = document.createElement('div');
       meta.className = 'meta';
-      meta.textContent = slot.used ? `${t('carId')}: ${slot.carIdHex} · ${t('perf')}: ${perfLabel(slot.perfState)}` : t('empty');
+      meta.textContent = slot.used
+        ? `${t('carId')}: ${slot.carIdHex} · ${t('perf')}: ${perfLabel(slot.perfState)}`
+        : (slot.locked ? t('slotLocked') : t('slotAvailable'));
       div.appendChild(meta);
+
+      if (slot.locked && !slot.used) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.append(btn(t('unlockSlot'), () => edit((u8) => C.unlockSlot(u8, slot.index)), false, true));
+        div.appendChild(row);
+      }
 
       if (slot.used) {
         const row = document.createElement('div');
@@ -710,6 +752,7 @@
       const li = document.createElement('li');
       if (c.field === 'name') li.textContent = t('chName', { from: c.from, to: c.to });
       else if (c.field === 'money') li.textContent = t('chMoney', { from: fmt(c.from), to: fmt(c.to) });
+      else if (c.field === 'unlock') li.textContent = t('chUnlock', { n: c.slot + 1 });
       else if (c.field === 'perf') li.textContent = t('chPerf', { n: c.slot + 1, from: perfLabel(c.from), to: perfLabel(c.to) });
       else if (!c.from.used && c.to.used) li.textContent = t('chSlotAdd', { n: c.slot + 1, id: c.to.carIdHex });
       else li.textContent = t('chSlotOther', { n: c.slot + 1 });

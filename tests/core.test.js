@@ -22,6 +22,7 @@ function syntheticSave() {
   u8.set(new TextEncoder().encode('Tester'), L.NAME_OFF);
   v.setUint32(L.SLOTS_OFF, 0x12345678, true);
   v.setUint32(L.SLOTS_OFF + 4, 0x9abcdef0, true);
+  for (let i = 1; i < L.NUM_SLOTS; i++) u8[L.SLOTS_OFF + i * L.SLOT_SIZE + L.SLOT_LOCK_OFF] = 1; // 2–5 bloqueados
   return u8;
 }
 
@@ -108,6 +109,7 @@ async function test(name, fn) {
     const slots = C.readSlots(w);
     const from = slots.find((s) => s.used).index;
     const to = slots.find((s) => !s.used).index;
+    if (C.readSlots(w)[to].locked) C.unlockSlot(w, to);
     C.duplicateSlot(w, from, to);
     assert.equal(C.readSlots(w)[to].carId, slots[from].carId);
     assert.throws(() => C.duplicateSlot(w, from, to), { code: 'SLOT_TAKEN' });
@@ -160,7 +162,7 @@ async function test(name, fn) {
   await test('comparador: valores numéricos y zonas del garaje', () => {
     const w = original.slice();
     w[0xc29a] = w[0xc29a] + 1;
-    C.setPerformance(w, 0, 'max');
+    C.setPerformance(w, 0, C.readSlots(w)[0].perfState === 'max' ? 'stock' : 'max');
     const r = C.compareSaves(original, w);
     const u = r.regions.find((x) => x.start === 0xc29a);
     assert.equal(u.zone.key, 'zoneUnknown');
@@ -206,6 +208,42 @@ async function test(name, fn) {
     const base = C.LAYOUT.SLOTS_OFF + C.LAYOUT.PERF_OFF;
     assert.deepEqual(w.subarray(base, base + C.LAYOUT.PERF_LEN), C.PERF_MAX_PATTERN);
     assert.equal(C.readSlots(w)[0].perfState, 'max');
+  });
+
+  await test('garaje: desbloquear un espacio cambia solo el byte de bloqueo', () => {
+    const w = original.slice();
+    const slots = C.readSlots(w);
+    const i = slots.findIndex((x) => x.locked);
+    assert.ok(i >= 0, 'debe haber un espacio bloqueado');
+    C.unlockSlot(w, i);
+    assert.equal(C.readSlots(w)[i].locked, false);
+    const d = C.diff(original, w);
+    assert.equal(d.bytes, 1);
+    assert.deepEqual(d.changes.map((c) => c.field), ['unlock']);
+    assert.throws(() => C.unlockSlot(w, i), { code: 'SLOT_NOT_LOCKED' });
+    const r = C.compareSaves(original, w);
+    assert.equal(r.regions[0].zone.key, 'zoneSlotLock');
+  });
+
+  await test('garaje: no se duplica en un espacio bloqueado', () => {
+    const w = original.slice();
+    const slots = C.readSlots(w);
+    const from = slots.find((x) => x.used).index;
+    const lockedEmpty = slots.find((x) => !x.used && x.locked);
+    if (lockedEmpty) assert.throws(() => C.duplicateSlot(w, from, lockedEmpty.index), { code: 'SLOT_LOCKED' });
+  });
+
+  await test('portadas de DVD: se reconocen, no se confunden con perfiles y se convierten a RGBA', () => {
+    const L = C.LAYOUT;
+    const cover = new Uint8Array(L.DATA_SIZE_DELTA + L.COVER_W * L.COVER_H * 4);
+    cover.set(L.MAGIC, 0);
+    cover.set([0x10, 0x20, 0x30, 0xff], L.DATA_SIZE_DELTA); // B, G, R, A
+    assert.ok(C.isCover(cover));
+    assert.ok(!C.isSave(cover));
+    assert.ok(!C.isCover(original));
+    const img = C.coverToRGBA(cover);
+    assert.equal(img.width, 512);
+    assert.deepEqual([...img.data.subarray(0, 4)], [0x30, 0x20, 0x10, 0xff]);
   });
 
   console.log(`\n${passed} pruebas correctas`);

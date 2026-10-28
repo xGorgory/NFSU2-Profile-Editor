@@ -29,6 +29,9 @@
     SLOT_HEADER: 16,                      // bytes que identifican el auto del espacio
     PERF_OFF: 0x94,                       // dentro del espacio
     PERF_LEN: 0x44,
+    SLOT_LOCK_OFF: 0x1ac,                 // dentro del espacio: 1 = bloqueado, 0 = disponible
+    PROFILE_MAX_SIZE: 0x40000,            // los perfiles pesan ~54 KB; las portadas, 1 MB
+    COVER_W: 512, COVER_H: 512,           // portadas de DVD/revista: 512×512 BGRA tras la cabecera
   });
 
   const MONEY_MAX = 0x7fffffff;
@@ -86,9 +89,28 @@
   // ---------------------------------------------------------------------------
   // Lectura
   // ---------------------------------------------------------------------------
+  const hasMagic = (u8) => !!u8 && u8.length >= 4 && LAYOUT.MAGIC.every((b, i) => u8[i] === b);
+
+  /** Perfil de jugador (no una portada de DVD/revista, que usa la misma firma). */
   function isSave(u8) {
-    if (!u8 || u8.length < LAYOUT.NAME_OFF + LAYOUT.NAME_FIELD) return false;
-    return LAYOUT.MAGIC.every((b, i) => u8[i] === b);
+    if (!hasMagic(u8) || u8.length < LAYOUT.NAME_OFF + LAYOUT.NAME_FIELD) return false;
+    return u8.length <= LAYOUT.PROFILE_MAX_SIZE && !isCover(u8);
+  }
+
+  /** Portada de DVD o revista guardada por el juego: cabecera 0x24 + imagen 512×512 BGRA. */
+  function isCover(u8) {
+    return hasMagic(u8) && u8.length === LAYOUT.DATA_SIZE_DELTA + LAYOUT.COVER_W * LAYOUT.COVER_H * 4;
+  }
+
+  /** Convierte una portada a píxeles RGBA (para un canvas o un PNG). */
+  function coverToRGBA(u8) {
+    if (!isCover(u8)) throw err('NOT_COVER');
+    const src = u8.subarray(LAYOUT.DATA_SIZE_DELTA);
+    const out = new Uint8ClampedArray(src.length);
+    for (let i = 0; i < src.length; i += 4) {
+      out[i] = src[i + 2]; out[i + 1] = src[i + 1]; out[i + 2] = src[i]; out[i + 3] = src[i + 3];
+    }
+    return { width: LAYOUT.COVER_W, height: LAYOUT.COVER_H, data: out };
   }
 
   function checkHeader(u8) {
@@ -127,6 +149,7 @@
       carId: used ? view(u8).getUint32(base, true) : 0,
       carIdHex: used ? hex(view(u8).getUint32(base, true)) : '',
       perfState,
+      locked: u8[base + LAYOUT.SLOT_LOCK_OFF] === 1,
     };
   }
 
@@ -183,10 +206,21 @@
     else u8.fill(0, base, base + LAYOUT.PERF_LEN);
   }
 
-  /** Copia un espacio completo (auto + piezas) a un espacio vacío. Experimental. */
+  /**
+   * Desbloquea un espacio del garaje. Descubierto comparando partidas: al habilitarse el
+   * espacio 2, el byte +0x1AC de ese espacio pasó de 1 a 0 y nada más del espacio cambió.
+   */
+  function unlockSlot(u8, i) {
+    if (i < 0 || i >= LAYOUT.NUM_SLOTS) throw err('SLOT_RANGE');
+    if (!readSlot(u8, i).locked) throw err('SLOT_NOT_LOCKED');
+    u8[slotBase(i) + LAYOUT.SLOT_LOCK_OFF] = 0;
+  }
+
+  /** Copia un espacio completo (auto + piezas) a un espacio vacío y disponible. Experimental. */
   function duplicateSlot(u8, from, to) {
     if (!readSlot(u8, from).used) throw err('SLOT_EMPTY');
     if (readSlot(u8, to).used) throw err('SLOT_TAKEN');
+    if (readSlot(u8, to).locked) throw err('SLOT_LOCKED');
     u8.copyWithin(slotBase(to), slotBase(from), slotBase(from) + LAYOUT.SLOT_SIZE);
   }
 
@@ -207,6 +241,7 @@
     if (a.money !== b.money) changes.push({ field: 'money', from: a.money, to: b.money });
     for (let i = 0; i < LAYOUT.NUM_SLOTS; i++) {
       const sa = a.slots[i], sb = b.slots[i];
+      if (sa.locked && !sb.locked) changes.push({ field: 'unlock', slot: i });
       if (sa.used !== sb.used || sa.carId !== sb.carId) changes.push({ field: 'slot', slot: i, from: sa, to: sb });
       else if (sa.perfState !== sb.perfState) changes.push({ field: 'perf', slot: i, from: sa.perfState, to: sb.perfState });
     }
@@ -356,6 +391,7 @@
       const n = Math.floor((off - L.SLOTS_OFF) / L.SLOT_SIZE);
       const rel = off - slotBase(n);
       if (rel < L.SLOT_HEADER) return { key: 'zoneSlotId', n: n + 1 };
+      if (rel === L.SLOT_LOCK_OFF) return { key: 'zoneSlotLock', n: n + 1 };
       if (rel >= L.PERF_OFF && rel < L.PERF_OFF + L.PERF_LEN) return { key: 'zoneSlotPerf', n: n + 1 };
       return { key: 'zoneSlot', n: n + 1, rel };
     }
@@ -407,6 +443,7 @@
     validateName, validateMoney, writeName, writeMoney,
     setPerformance, duplicateSlot, restoreSlot, diff,
     isZip, readZip, writeZip, crc32, hexDump,
+    isCover, coverToRGBA, unlockSlot,
     cp1252Encode, cp1252Decode,
   };
 });

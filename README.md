@@ -33,7 +33,7 @@ Disponible en español, inglés y portugués.
 **Partida**
 - Nombre del perfil (admite tildes y ñ, máximo 31 caracteres).
 - Dinero con validación (0 a 2.147.483.647) y botones rápidos.
-- Garaje: ver los 5 espacios, poner las mejoras al máximo (igual que las deja el juego) o quitarlas, duplicar un auto (experimental) y deshacer por auto.
+- Garaje: ver los 5 espacios y cuáles están bloqueados, **desbloquear espacios**, poner las mejoras al máximo (igual que las deja el juego) o quitarlas, duplicar un auto (experimental) y deshacer por espacio.
 - Lista de cambios antes de descargar, deshacer (hasta 50 pasos) y descartar todo.
 - Respaldo automático del original al descargar.
 
@@ -41,6 +41,7 @@ Disponible en español, inglés y portugués.
 - Abre el `.zip` directamente y devuelve uno listo para **Restaurar**, con los mismos nombres de archivo.
 - **Configuración del juego (`settings.ini`)**: 47 opciones con menús y buscador (idioma, resolución, FPS, mando, bocina, recorrido libre…). Conserva los comentarios del archivo.
 - **Gráficos (`registry.txt`)**: reflejos, sombras, desenfoque, niebla, lluvia, nivel de detalle, etc.
+- **Portadas de DVD y revista**: las que creaste en el juego se ven en el editor y se descargan como PNG.
 
 **Investigación**
 - **Comparador de partidas**: carga una copia de antes y una de después y muestra qué bytes cambiaron, con su valor como número y la zona conocida. Exporta a CSV.
@@ -56,9 +57,11 @@ Disponible en español, inglés y portugués.
 | `0x0004` | 4 | Tamaño total del archivo |
 | `0x000C` | 4 | Tamaño − 0x24 |
 | `0x0010` | 16 | Suma de verificación (el juego la recalcula al guardar) |
-| `0x5AEC` | 5 × `0x7F2` | Espacios del garaje: 16 bytes de ID del auto; rendimiento en +0x94 (0x44 bytes) |
+| `0x5AEC` | 5 × `0x7F2` | Espacios del garaje: 16 bytes de ID del auto; rendimiento en +0x94 (0x44 bytes); bloqueo en +0x1AC (1 = bloqueado, 0 = disponible) |
 | `0xA16A` | 4 | Dinero (int32, little-endian) |
 | `0xD225` | 32 | Nombre del perfil (Windows-1252, terminado en 0) |
+
+**Portadas (`<perfil> DVD n`):** misma firma `20CM`, cabecera de 0x24 bytes y luego una imagen de 512 × 512 en BGRA (1 MB). No son perfiles.
 
 **Mejoras al máximo:** el juego conserva en 1 los bytes 0–56, 59 y 62 del bloque de rendimiento y pone el resto en 0.
 
@@ -66,7 +69,6 @@ Disponible en español, inglés y portugués.
 
 ### Pendiente
 
-- Dónde se guardan los espacios del garaje desbloqueados.
 - Tabla de IDs de autos → nombres.
 - Estadísticas de carrera, reputación y apariencia del auto.
 
