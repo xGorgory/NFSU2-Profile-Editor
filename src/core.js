@@ -209,6 +209,7 @@
   /**
    * Desbloquea un espacio del garaje. Descubierto comparando partidas: al habilitarse el
    * espacio 2, el byte +0x1AC de ese espacio pasó de 1 a 0 y nada más del espacio cambió.
+   * Confirmado en el juego (nfsu2.xyz): con los 5 en 0, los 5 espacios aparecen disponibles.
    */
   function unlockSlot(u8, i) {
     if (i < 0 || i >= LAYOUT.NUM_SLOTS) throw err('SLOT_RANGE');

@@ -673,6 +673,9 @@
   function renderGarage(s) {
     const box = $('#garage');
     box.innerHTML = '';
+    const lockedSlots = s.slots.filter((x) => x.locked).map((x) => x.index);
+    $('#unlockAll').hidden = !lockedSlots.length;
+    $('#unlockAll').onclick = () => edit((u8) => lockedSlots.forEach((i) => C.unlockSlot(u8, i)));
     const emptySlots = s.slots.filter((x) => !x.used && !x.locked).map((x) => x.index);
     for (const slot of s.slots) {
       const div = document.createElement('div');
@@ -690,7 +693,7 @@
       if (slot.locked && !slot.used) {
         const row = document.createElement('div');
         row.className = 'row';
-        row.append(btn(t('unlockSlot'), () => edit((u8) => C.unlockSlot(u8, slot.index)), false, true));
+        row.append(btn(t('unlockSlot'), () => edit((u8) => C.unlockSlot(u8, slot.index))));
         div.appendChild(row);
       }
 
